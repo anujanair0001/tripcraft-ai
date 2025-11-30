@@ -14,10 +14,16 @@ from tools import (
 from agents import get_agent_system
 
 class MockToolContext:
-    """Mock ToolContext for demonstration"""
-    def __init__(self, user_id: str = "demo_user", session_id: str = None):
+    """Mock ToolContext for demonstration - compatible with ADK ToolContext"""
+    def __init__(self, user_id: str = "demo_user", session_id: str = None, invocation_context=None):
         self.user_id = user_id
         self.session_id = session_id or f"session_{random.randint(1000, 9999)}"
+        self.invocation_context = invocation_context or {}
+        
+    @classmethod
+    def create_mock(cls, user_id: str = "demo_user"):
+        """Create a mock context without requiring invocation_context"""
+        return cls(user_id=user_id)
 
 def format_travel_results(result: Dict[str, Any]):
     """Format and display travel results"""
@@ -74,7 +80,7 @@ def run_demo(request: str = "Budget travel to Tokyo for 5 days"):
     print(f"🎯 Parsed: {parsed}")
     
     # Create context
-    context = MockToolContext()
+    context = MockToolContext.create_mock()
     print(f"🔧 Session: {context.session_id}")
     
     # Try multi-agent system first
@@ -169,9 +175,59 @@ def run_interactive_demo():
         except Exception as e:
             print(f"❌ Error: {e}")
 
+def create_simple_context(user_id: str = "demo_user"):
+    """Create a simple context object for Kaggle/Jupyter environments"""
+    class SimpleContext:
+        def __init__(self, user_id):
+            self.user_id = user_id
+            self.session_id = f"session_{random.randint(1000, 9999)}"
+    return SimpleContext(user_id)
+
+def run_minimal_demo(request: str = "Budget travel to Tokyo for 5 days"):
+    """Minimal demo for Kaggle/Jupyter environments"""
+    print("🚀 TripCraft AI - Minimal Demo")
+    print("=" * 40)
+    
+    try:
+        # Simple imports and context
+        from utils.parser import parse_travel_request
+        from tools.travel_tools import search_flights_ultimate, find_hotels_ultimate
+        
+        # Parse request
+        parsed = parse_travel_request(request)
+        print(f"📝 Request: {request}")
+        print(f"🎯 Parsed: {parsed}")
+        
+        # Create simple context
+        context = create_simple_context()
+        print(f"🔧 Session: {context.session_id}")
+        
+        # Run flight search
+        flights = search_flights_ultimate(
+            parsed['destination'], 
+            '2024-02-01', 
+            '2024-02-06', 
+            context
+        )
+        
+        # Display results
+        print(f"\n✈️ Found {len(flights['flights'])} flights to {flights['destination']}")
+        for flight in flights['flights']:
+            print(f"   {flight['airline']}: ${flight['price']} ({flight['duration']})")
+        
+        print("\n✅ Demo completed successfully!")
+        return flights
+        
+    except Exception as e:
+        print(f"❌ Error in minimal demo: {e}")
+        return None
+
 if __name__ == "__main__":
     # Run default demo
     run_demo()
     
     # Uncomment for interactive mode
     # run_interactive_demo()
+    
+    # Uncomment for minimal demo (Kaggle/Jupyter)
+    # run_minimal_demo()
