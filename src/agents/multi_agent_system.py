@@ -1,6 +1,16 @@
 """
 Multi-agent system implementation for TripCraft AI
+Built with AI Agent Development Kit (ADK)
 """
+# AI Agent Development Kit imports
+try:
+    from amazon_adk import LlmAgent, ParallelAgent, SequentialAgent, InMemoryRunner
+    from amazon_adk.tools import ToolContext
+    ADK_AVAILABLE = True
+except ImportError:
+    # Fallback for development without ADK - using mock implementations
+    ADK_AVAILABLE = False
+
 from typing import List, Dict, Any
 from config import logger, MODEL_CONFIG
 from tools import (
@@ -48,10 +58,29 @@ class MockInMemoryRunner:
         return {"status": "completed", "message": "Mock execution completed"}
 
 def create_travel_agents():
-    """Create the complete multi-agent system for travel planning"""
+    """Create the complete multi-agent system for travel planning
+    
+    Uses AI Agent Development Kit (ADK) when available,
+    falls back to mock implementations for development.
+    """
+    
+    if ADK_AVAILABLE:
+        logger.info("Using AI Agent Development Kit (ADK) for production agents")
+        # Use real ADK classes
+        AgentClass = LlmAgent
+        ParallelClass = ParallelAgent
+        SequentialClass = SequentialAgent
+        RunnerClass = InMemoryRunner
+    else:
+        logger.info("Using mock implementations for development/demo")
+        # Use mock classes for development
+        AgentClass = MockLlmAgent
+        ParallelClass = MockParallelAgent
+        SequentialClass = MockSequentialAgent
+        RunnerClass = MockInMemoryRunner
     
     # Specialized Research Agents
-    flight_researcher = MockLlmAgent(
+    flight_researcher = AgentClass(
         name="FlightResearcher",
         model=MODEL_CONFIG["default_model"],
         description="Specialized flight research agent with advanced filtering",
@@ -65,7 +94,7 @@ def create_travel_agents():
         tools=[search_flights_ultimate]
     )
     
-    hotel_researcher = MockLlmAgent(
+    hotel_researcher = AgentClass(
         name="HotelResearcher",
         model=MODEL_CONFIG["default_model"],
         description="Specialized hotel research agent with location-based scoring",
@@ -79,7 +108,7 @@ def create_travel_agents():
         tools=[find_hotels_ultimate]
     )
     
-    activity_researcher = MockLlmAgent(
+    activity_researcher = AgentClass(
         name="ActivityResearcher",
         model=MODEL_CONFIG["default_model"],
         description="User preference management and activity recommendation specialist",
@@ -94,13 +123,13 @@ def create_travel_agents():
     )
     
     # Parallel coordination for research agents
-    parallel_research_team = MockParallelAgent(
+    parallel_research_team = ParallelClass(
         name="ParallelResearchTeam",
         sub_agents=[flight_researcher, hotel_researcher, activity_researcher]
     )
     
     # Aggregation agent
-    travel_aggregator = MockLlmAgent(
+    travel_aggregator = AgentClass(
         name="TravelAggregator",
         model=MODEL_CONFIG["default_model"],
         description="Result aggregation and travel plan optimization specialist",
@@ -115,13 +144,13 @@ def create_travel_agents():
     )
     
     # Root sequential agent
-    root_agent = MockSequentialAgent(
+    root_agent = SequentialClass(
         name="TripCraftTravelPlanningSystem",
         sub_agents=[parallel_research_team, travel_aggregator]
     )
     
     # Production runner
-    runner = MockInMemoryRunner(agent=root_agent)
+    runner = RunnerClass(agent=root_agent)
     
     return {
         "flight_researcher": flight_researcher,

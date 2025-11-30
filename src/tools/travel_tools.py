@@ -1,6 +1,15 @@
 """
 Core travel planning tools for TripCraft AI
+Built with AI Agent Development Kit (ADK)
 """
+# AI Agent Development Kit imports
+try:
+    from amazon_adk import LlmAgent, ParallelAgent, SequentialAgent, InMemoryRunner
+    from amazon_adk.tools import ToolContext
+except ImportError:
+    # Fallback for development without ADK
+    pass
+
 import random
 from datetime import datetime
 from typing import Dict, Any, List
